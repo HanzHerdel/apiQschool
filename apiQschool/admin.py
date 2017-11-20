@@ -21,6 +21,7 @@ admin.site.register(Horario)
 admin.site.register(Calificacion)
 admin.site.register(MaterialDeApoyo)
 admin.site.register(Reportes)
+admin.site.register(AsistenciasCurso)
 # Register your models here.
 class PerfilInline(admin.StackedInline):
     model = Perfil

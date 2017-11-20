@@ -47,15 +47,21 @@ urlpatterns = [
     url(r'^cursos/(?P<pk>[0-9]+)/$',views.CursoDetail.as_view()),
     url(r'^cursosprofesor/$',views.CursosProfesorList.as_view()),   
 
-    url(r'^cronogramacursos/$',views.ActividadesCronogramaList.as_view()),#crearNuevos Programas
+    url(r'^cronogramacursos/$',views.ActividadesCronograma.as_view()),#crearNuevos Programas
+    url(r'^editarcronograma/(?P<pk>[0-9]+)/$',views.EditarCronogramaView.as_view()),#Edicion y Eliminacion de programa
     url(r'^cronogramacursos/(?P<pk>[0-9]+)/$',views.CronogramaCursoDetail.as_view()),#obtencion de Cronograma en un curos
     url(r'^materialcronograma/$',views.CrearMaterialesDeApoyo.as_view()),#crear material de apoyo para actividad de cronograma
+   
+
     url(r'^eliminarmaterialcronograma/$',views.EliminarMaterialesDeApoyo.as_view()),#eliminar material de apoyo para actividad de cronograma
 
     url(r'^crearactividadcurso/$',views.CrearActividadesProfesor.as_view()),    
     url(r'^actividades/(?P<pk>[0-9]+)/$',views.ActividadCursoDetail.as_view()),
     
     url(r'^listaactividadcurso/(?P<pk>[0-9]+)/$',views.ActividadCursoList.as_view()),
+    url(r'^historialasistencia/(?P<pk>[0-9]+)/$',views.HistorialAsistencia.as_view()),
+    url(r'^asistenciascurso/(?P<pk>[0-9]+)/$',views.CantidadAsistenciasCursoSerializer.as_view()),
+
 
     url(r'^editarentrega/(?P<pk>[0-9]+)/$',views.EntregaActividadEdit.as_view()),
     url(r'^entregasactividad/(?P<pk>[0-9]+)/$',views.EntregasActividad.as_view()),

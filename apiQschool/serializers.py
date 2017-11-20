@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from models import (Institucion,HistorialDePagos,
 	Perfil,Grado,Subscripciones,
 	Curso,ActividadesProgramadasCurso,ActividadCurso,
-	EntregaActividadAlumno,AlumnoEnCurso,Asistencia,Horario,Calificacion,MaterialDeApoyo,
+	EntregaActividadAlumno,AlumnoEnCurso,Asistencia,AsistenciasCurso,Horario,Calificacion,MaterialDeApoyo,
 	USER_CHOICES)
 
 #innesesario proximo a ser eliminado 
@@ -95,7 +95,6 @@ class GradoSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Grado
 		fields = ('__all__')
-
 
 
 class CronogramaCursoSerializer(serializers.ModelSerializer):
@@ -198,18 +197,49 @@ class AlumnoEnCurso4AsistenciaSerializer(serializers.ModelSerializer):
 		model = AlumnoEnCurso
 		fields = ('__all__')
 
+#Serializar para crear multiples instancias de asistencia
 class AsistenciaListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         asistencia = [Asistencia(**item) for item in validated_data]
         return Asistencia.objects.bulk_create(asistencia)
 
-class AsistenciaSerializer(serializers.ModelSerializer):
-    
+
+class AsistenciaSerializer(serializers.ModelSerializer):    
     class Meta:
     	fields=('__all__')
     	model = Asistencia
         list_serializer_class = AsistenciaListSerializer
 
+class AsistenciasCursoSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = AsistenciasCurso
+		fields=('__all__')
+
+class CantidadAsistenciasCursoSerializer(serializers.ModelSerializer):
+	cantidadAsistencias = serializers.SerializerMethodField()
+	class Meta:
+		model = Curso
+		fields=('__all__')
+		extra_fields=('cantidadAsistencias')
+	def get_cantidadAsistencias(self,obj):
+		print "***********************"
+		print obj
+		return obj.asistenciasCurso.count()
+
+class HistorialAsistenciaSerializer(serializers.ModelSerializer):
+	cantidadAsistencia = serializers.SerializerMethodField()#campo de cantidad de asistencias en curso
+	alumno = PerfilSerializer(many=False, read_only=True)
+	class Meta:
+		model = AlumnoEnCurso
+		fields=('__all__')
+		extra_fields=('cantidadAsistencia','alumno')
+	def get_cantidadAsistencia(self, obj):
+		#obj es una iteracion de alumnoEnCurso desde el cual se obtendra la cantidad de asistencias
+		#print obj
+		#print self
+		#return Perfil.objects.filter(asistenciaAlumno__asistencia=True,id=obj.alumno.id).count()
+		return obj.alumno.asistenciaAlumno.filter(asistenciaCurso__curso=obj.curso, asistencia=True).count()
+	 #AlumnoEnCurso#Perfil#Asistencia, se filtra ya que Asistencia tiene un campo asistenciaCurso
 # class AsistenciaSerializer(serializers.ModelSerializer):
 # 	#alumno_curso=AlumnoEnCurso4AsistenciaSerializer(many=True,read_only=True)
 # 	#nombreAlumno=serializers.SlugRelatedField(slug_field='')

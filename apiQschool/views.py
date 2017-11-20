@@ -79,7 +79,7 @@ class CursoDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CursoSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyCursos)
 
-class ActividadesCronogramaList(generics.ListCreateAPIView):
+class ActividadesCronograma(generics.ListCreateAPIView):
     queryset = ActividadesProgramadasCurso.objects.all()
     serializer_class = ActividadesProgramadasCursoSerializer
 
@@ -94,7 +94,7 @@ class CronogramaCursoDetail(generics.RetrieveUpdateDestroyAPIView):
 class CursosProfesorList(generics.ListCreateAPIView):
     serializer_class = CursoSerializer
     def get_queryset(self):
-        print self.request.user.perfilUsuario
+        #print self.request.user.perfilUsuario
         return Curso.objects.filter(profesor=self.request.user.perfilUsuario)
 
 class AlumnosEnCurso(generics.ListAPIView):
@@ -114,7 +114,7 @@ class ActividadesProfesorList(generics.ListAPIView):
     serializer_class = ActividadesProfesorSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyActividades)
     def get_queryset(self):
-        print self.request.user.perfilUsuario
+        #print self.request.user.perfilUsuario
         return ActividadCurso.objects.filter(curso__profesor=self.request.user.perfilUsuario)
 
 class Calificar(generics.CreateAPIView):
@@ -127,6 +127,10 @@ class CrearMaterialesDeApoyo(generics.CreateAPIView):
     serializer_class = MaterialDeApoyoSerializer
     parser_classes =(MultiPartParser,FormParser)
     permission_classes =  (IsAuthenticatedOrReadOnly,)
+
+class EditarCronogramaView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ActividadesProgramadasCursoSerializer
+    queryset= ActividadesProgramadasCurso.objects.all()
 
 class EliminarMaterialesDeApoyo(generics.DestroyAPIView):
     serializer_class = MaterialDeApoyoSerializer
@@ -146,7 +150,7 @@ class PerfilList(generics.ListAPIView):
 class HorarioProfesorList(generics.ListCreateAPIView):
     serializer_class = HorarioSerializer
     def get_queryset(self):
-        print self.request.user.perfilUsuario
+        #print self.request.user.perfilUsuario
         return Horario.objects.filter(curso__profesor=self.request.user.perfilUsuario)
 
 class HorarioCursoList(generics.ListCreateAPIView):
@@ -182,6 +186,16 @@ class EntregasActividad(generics.ListAPIView):
         pk = self.kwargs['pk']
         return EntregaActividadAlumno.objects.filter(actividad=pk)
 
+class HistorialAsistencia(generics.ListAPIView):
+    serializer_class = HistorialAsistenciaSerializer
+    def get_queryset(self):
+        pk = self.kwargs['pk']
+        return AlumnoEnCurso.objects.filter(curso=pk)
+
+class CantidadAsistenciasCursoSerializer(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CantidadAsistenciasCursoSerializer
+    queryset= Curso.objects.all()
+
 class PunteoActividadDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = EntregaActividadAlumno.objects.all()
     serializer_class = SubirActividadesAlumnoSerializer
@@ -202,13 +216,23 @@ class GradoDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Grado.objects.all()
     serializer_class = GradoSerializer
 
+
+#creacion de asistencias, se crea primero la AsistenciaCurso, luego se obtiene el id para crear las Asistencia de cada alumno
 class AsistenciaList(APIView):
     def post (self, request,format=None):
-        serializer = AsistenciaSerializer(data=request.data, many=True)
-        if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializerAsistencia = AsistenciasCursoSerializer(data=request.data[u'asistencia'])#obtener la asistenciaCurso Del diccionario
+        if serializerAsistencia.is_valid():
+            serializerAsistencia.save()
+            #print serializerAsistencia.data
+            for item in request.data[u'asistencias']: #si se crea la asistenciaCurso obtendremos la id y la agregaremos a cada asistencia de alumno
+                #print item
+                item[u'asistenciaCurso']=serializerAsistencia.data[u'id']
+            serializer = AsistenciaSerializer(data=request.data[u'asistencias'], many=True)
+            if serializer.is_valid():
+                   serializer.save()
+                   return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializerAsistencia.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AsistenciaDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Asistencia.objects.all()

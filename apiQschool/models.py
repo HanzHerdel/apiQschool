@@ -158,7 +158,7 @@ class Horario(models.Model):
 	grado = models.ForeignKey(Grado,on_delete=models.CASCADE, related_name='horarioGrado')
 	dia = models.CharField(choices=DIA_CHOICES,default='lunes',max_length=16)
 	hora = models.TimeField(auto_now=False, auto_now_add=False,editable=True,blank=True)
-	fecha = models.DateTimeField(blank=True,null=True)
+#	fecha = models.DateTimeField(blank=True,null=True)
 	def __str__(self):
 		identi = ' %s %s %s ' % (self.curso, self.dia, self.hora)
 		return identi.strip()
@@ -174,7 +174,7 @@ class ActividadesProgramadasCurso(models.Model):
 	fechaDeFinalizacion = models.DateTimeField(blank=True,null=True)
 	titulo=models.CharField(blank=True,max_length=64)
 	descripcion=models.TextField(blank=True,max_length=224)
-	obejtivos=models.TextField(blank=True,max_length=224)
+	objetivos=models.TextField(blank=True,max_length=224)
 	valoracion = models.DecimalField(default=0,max_digits=5, decimal_places=2)
 	modificado=models.DateTimeField(auto_now=True,null=True, blank=True)
 	def __str__(self):
@@ -207,11 +207,10 @@ class ActividadCurso(models.Model):
 def create_actividad(sender, instance, created, **kwargs):
     if created:
     	alumnos = AlumnoEnCurso.objects.filter(curso=instance.curso)
-    	print alumnos
     	for alumno in alumnos:
     		ob=EntregaActividadAlumno.objects.create(actividad=instance,alumno=alumno.alumno)
     		ob.save()
-    		print ob 
+    		#print ob 
 
 def generar_carpeta_entrega(instance, filename):
 	return "{institucion}/engregaDeaActividades/{curso}{grado}/{actividad}/{file}".format(institucion=instance.alumno.institucion.nombre,
@@ -245,15 +244,16 @@ class Calificacion(models.Model):
 	# def __str__(self):
 	# 	identi = '%s %s %s' % (self.actividad.titulo, self.actividad.curso, self.alumno.user.username)
 	# 	return identi.strip()
-    
+ 
+ #cambio de estado de la entrega de actividad a true  
 @receiver(post_save, sender=Calificacion)
 def patch_entregaactividad(sender, instance, created, **kwargs):
     if created:
     	entregaActividad = EntregaActividadAlumno.objects.get(id=instance.entregaActividadAlumno.pk)
-    	print entregaActividad
+    	print (entregaActividad)
     	entregaActividad.calificado=True;
     	entregaActividad.save()
-    	print entregaActividad
+    	print (entregaActividad)
 
 
 #alumno en curso
@@ -266,14 +266,24 @@ class AlumnoEnCurso(models.Model):
 	class Meta:
 		unique_together = ['alumno','curso']
 
-class Asistencia(models.Model):
-	alumno_curso=models.ForeignKey(AlumnoEnCurso,on_delete=models.CASCADE, related_name='asistenciaAlumno')
-	fecha=models.DateTimeField(blank=True,null=True)
-	asistencia=models.BooleanField(default=True)
-	horario=models.ForeignKey(Horario,on_delete=models.CASCADE, related_name='asistenciaHorario',null=True)
-	modificado=models.DateTimeField(auto_now=True,null=True, blank=True)
+class AsistenciasCurso(models.Model):#asistencia base para llevar un mejor control sobre las asistencias creadas, es unica para cada fecha
+	curso = models.ForeignKey(Curso,on_delete=models.CASCADE, related_name='asistenciasCurso')
+	fecha = models.DateTimeField(blank=True,null=True)
+	horario =models.ForeignKey(Horario,on_delete=models.CASCADE, related_name='asistenciasHorario',null=True)
 	def __str__(self):
-		return self.alumno_curso.alumno.user.username
+		valor = '%s %s' % (self.curso, self.fecha)
+		return valor.strip()
+
+class Asistencia(models.Model):#asistencia alumno relacionado con asistenciaCurso
+	alumno=models.ForeignKey(Perfil,on_delete=models.CASCADE, related_name='asistenciaAlumno')
+	asistencia=models.BooleanField(default=True)
+#	horario=models.ForeignKey(Horario,on_delete=models.CASCADE, related_name='asistenciaHorario',null=True)
+	modificado=models.DateTimeField(auto_now=True,null=True, blank=True)
+	asistenciaCurso=models.ForeignKey(AsistenciasCurso,on_delete=models.CASCADE, related_name='asistencia')
+	def __str__(self):
+		return self.alumno.user.first_name
+	class Meta:
+		unique_together = ['alumno','asistenciaCurso']
 	# def __str__(self):
 	# 	identi = '%s %s' % (self.alumno_curso.alumno.user.username, self.alumno_curso.curso.titulo)
 	# 	return identi.strip()
